@@ -9,9 +9,6 @@ public class GridInspector : Editor {
 		base.OnInspectorGUI();
 		Grid grid = target as Grid;
 
-		if(GUILayout.Button("Generate Hex Mesh")) 
-			grid.GetMesh();
-
 		if(GUILayout.Button("Generate Hex Grid"))
 			grid.GenerateGrid();
 
