@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 
-[ExecuteInEditMode]
 public class Grid : MonoBehaviour {
+	public static Grid inst;
+
 	//Map settings
 	public MapShape mapShape = MapShape.Rectangle;
 	public OffsetCoords offsetCoords = OffsetCoords.Odd;
@@ -19,30 +20,22 @@ public class Grid : MonoBehaviour {
 	//Generation Options
 	public bool addColliders = true;
 	public bool drawOutlines = true;
+	public Material lineMaterial;
 
 	//Internal variables
-	private Tile[] grid = null;
+	private Dictionary<string, Tile> grid = new Dictionary<string, Tile>();
 	private Mesh hexMesh = null;
-	private bool gridExists = false;
 	private CubeIndex[] directions = new CubeIndex[] {new CubeIndex(1, -1, 0), new CubeIndex(1, 0, -1), new CubeIndex(0, 1, -1), new CubeIndex(-1, 1, 0), new CubeIndex(-1, 0, 1), new CubeIndex(0, -1, 1)}; 
 
 	#region Getters and Setters
-	public Tile[] Tiles {
+	public Dictionary<string, Tile> Tiles {
 		get {return grid;}
-	}
-
-	public bool GridExists {
-		get {return gridExists;}
 	}
 	#endregion
 
 	#region Public Methods
 	public void GenerateGrid() {
-		if(gridExists){
-			Debug.Log ("Grid already exists");
-			return;
-		}
-
+		ClearGrid();
 		GetMesh();
 
 		switch(mapShape) {
@@ -56,70 +49,39 @@ public class Grid : MonoBehaviour {
 		default:
 			break;
 		}
-		gridExists = true;
 	}
 
 	public void ClearGrid() {
-		if(!gridExists){
-			Debug.Log ("Grid does not exist");
-			return;
-		}
-
 		Debug.Log ("Clearing grid...");
 
-		var list = grid.ToList();
-		for(int i = 0; i < list.Count; i++)
-			DestroyImmediate(list[i].gameObject, true);
-
-		Array.Clear(grid, 0, grid.Length);
-
-		gridExists = false;
+		foreach(var tile in grid)
+			DestroyImmediate(tile.Value.gameObject, false);
+	
+		grid.Clear();
 	}
 
 	public List<Tile> Neighbours(Tile tile) {
 		List<Tile> ret = new List<Tile>();
-		OffsetIndex o;
+		CubeIndex o;
 
-		for(int i = 0; i <= 6; i++) {
-			switch(offsetCoords){
-			case OffsetCoords.Even:
-				switch(hexOrientation){
-				case HexOrientation.Flat:
-					o = Tile.CubeToEvenFlat(tile.index + directions[i]);
-					if(o.row + o.col * mapWidth > 0 && o.row + o.col * mapWidth < mapWidth * mapHeight)
-						ret.Add(grid[o.row + o.col * mapWidth]);
-					break;
+		for(int i = 0; i < 6; i++) {
 
-				case HexOrientation.Pointy:
-					o = Tile.CubeToEvenPointy(tile.index + directions[i]);
-					if(o.row + o.col * mapWidth < mapWidth * mapHeight)
-						ret.Add(grid[o.row + o.col * mapWidth]);
-					break;
-				}
-				break;
-
-			case OffsetCoords.Odd:
-				switch(hexOrientation){
-				case HexOrientation.Flat:
-					o = Tile.CubeToOddFlat(tile.index + directions[i]);
-					if(o.row + o.col * mapWidth < mapWidth * mapHeight)
-						ret.Add(grid[o.row + o.col * mapWidth]);
-					break;
-					
-				case HexOrientation.Pointy:
-					o = Tile.CubeToOddPointy(tile.index + directions[i]);
-					if(o.row + o.col * mapWidth < mapWidth * mapHeight)
-						ret.Add(grid[o.row + o.col * mapWidth]);
-					break;
-				}
-				break;
-			}
+			o = tile.index + directions[i];
+			if(grid.ContainsKey(o.ToString()))
+				ret.Add(grid[o.ToString()]);
 		}
 		return ret;
 	}
 	#endregion
 
 	#region Private Methods
+	private void Awake() {
+		if(!inst)
+			inst = this;
+
+		GenerateGrid();
+	}
+
 	private void GetMesh() {
 		hexMesh = null;
 		Tile.GetHexMesh(hexRadius, hexOrientation, ref hexMesh);
@@ -131,21 +93,37 @@ public class Grid : MonoBehaviour {
 
 	private void GenRectShape() {
 		Debug.Log ("Generating rectangular shaped grid...");
-		grid = new Tile[mapWidth * mapHeight];
-		
-		for(int i = 0; i < mapWidth; i++){
-			for(int j = 0; j < mapHeight; j++){
-			switch(hexOrientation){
-				case HexOrientation.Flat:
-					grid[i + j * mapWidth] = CreateHexGO(new Vector3(i * HorizontalSpacing(), 0.0f, j * VerticalSpacing() + ((i&1) * 0.5f * VerticalSpacing())), ("Hex [" + i + "," + j + "]"));
-					break;
+//		grid = new Dictionary<int, Tile>();
 
-				case HexOrientation.Pointy:
-					grid[i + j * mapWidth] = CreateHexGO(new Vector3(i * HorizontalSpacing() + (j&1) * 0.5f * HorizontalSpacing(), 0.0f, j * VerticalSpacing()), ("Hex [" + i + "," + j + "]"));
-					break;
-				}
+		CubeIndex index;
+		Tile tile;
+
+		for (int q = 0; q <= mapWidth; q++){
+			for(int r = 0; r <= mapHeight - q; r++){
+				tile = CreateHexGO(new Vector3(q * HorizontalSpacing(), 0.0f, r * VerticalSpacing() + ((q&1) * 0.5f * VerticalSpacing())), ("Hex " ));
+				tile.index = new CubeIndex(q,r,-q-r);
+				grid.Add(tile.index.ToString(), tile);
 			}
 		}
+
+//		for(int i = 0; i < mapWidth; i++){
+//			for(int j = 0; j < mapHeight; j++){
+//				index = new CubeIndex(i,j);
+//				switch(hexOrientation){
+//				case HexOrientation.Flat:
+//					tile = CreateHexGO(new Vector3(i * HorizontalSpacing(), 0.0f, j * VerticalSpacing() + ((i&1) * 0.5f * VerticalSpacing())), ("Hex " + index.ToString()));
+//					tile.index = index;
+//					grid[index.ToString()] = tile;
+//					break;
+//
+//				case HexOrientation.Pointy:
+//					tile = CreateHexGO(new Vector3(i * HorizontalSpacing() + (j&1) * 0.5f * HorizontalSpacing(), 0.0f, j * VerticalSpacing()), ("Hex " + index.ToString()));
+//					tile.index = index;
+//					grid[index.ToString()] = tile;
+//					break;
+//				}
+//			}
+//		}
 	}
 
 	private Tile CreateHexGO(Vector3 postion, string name) {
@@ -188,7 +166,7 @@ public class Grid : MonoBehaviour {
 
 			lines.SetWidth(0.1f, 0.1f);
 			lines.SetColors(Color.black, Color.black);
-			lines.material = UnityEditor.AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
+			lines.material = lineMaterial;
 
 			lines.SetVertexCount(7);
 

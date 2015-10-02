@@ -4,6 +4,17 @@ using System.Collections.Generic;
 public class Tile : MonoBehaviour {
 	public CubeIndex index;
 
+	public void OnMouseEnter() {
+		foreach(var tile in Grid.inst.Neighbours(this)){
+			tile.GetComponent<LineRenderer>().SetColors(Color.cyan, Color.cyan);
+		}
+	}
+
+	public void OnMouseExit() {				
+		foreach(var tile in Grid.inst.Neighbours(this))
+			tile.GetComponent<LineRenderer>().SetColors(Color.black, Color.black);
+	}
+
 	public static Vector3 Corner(Vector3 origin, float radius, int corner, HexOrientation orientation){
 		float angle = 60 * corner;
 		if(orientation == HexOrientation.Pointy)
@@ -147,5 +158,22 @@ public struct CubeIndex {
 
 	public static CubeIndex operator+ (CubeIndex one, CubeIndex two){
 		return new CubeIndex(one.x + two.x, one.y + two.y, one.z + two.z);
+	}
+
+	public override bool Equals (object obj) {
+		if(obj == null)
+			return false;
+		CubeIndex o = (CubeIndex)obj;
+		if((System.Object)o == null)
+			return false;
+		return((x == o.x) && (y == o.y) && (z == o.z));
+	}
+
+	public override int GetHashCode () {
+		return(x.GetHashCode() ^ (y.GetHashCode() + (int)(Mathf.Pow(2, 32) / (1 + Mathf.Sqrt(5))/2) + (x.GetHashCode() << 6) + (x.GetHashCode() >> 2)));
+	}
+
+	public override string ToString () {
+		return string.Format("[" + x + "," + y + "," + z + "]");
 	}
 }
