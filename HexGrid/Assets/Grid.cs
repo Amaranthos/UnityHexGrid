@@ -8,7 +8,6 @@ public class Grid : MonoBehaviour {
 
 	//Map settings
 	public MapShape mapShape = MapShape.Rectangle;
-	public OffsetCoords offsetCoords = OffsetCoords.Odd;
 	public int mapWidth;
 	public int mapHeight;
 
@@ -25,7 +24,15 @@ public class Grid : MonoBehaviour {
 	//Internal variables
 	private Dictionary<string, Tile> grid = new Dictionary<string, Tile>();
 	private Mesh hexMesh = null;
-	private CubeIndex[] directions = new CubeIndex[] {new CubeIndex(1, -1, 0), new CubeIndex(1, 0, -1), new CubeIndex(0, 1, -1), new CubeIndex(-1, 1, 0), new CubeIndex(-1, 0, 1), new CubeIndex(0, -1, 1)}; 
+	private CubeIndex[] directions = 
+		new CubeIndex[] {
+			new CubeIndex(1, -1, 0), 
+			new CubeIndex(1, 0, -1), 
+			new CubeIndex(0, 1, -1), 
+			new CubeIndex(-1, 1, 0), 
+			new CubeIndex(-1, 0, 1), 
+			new CubeIndex(0, -1, 1)
+		}; 
 
 	#region Getters and Setters
 	public Dictionary<string, Tile> Tiles {
@@ -35,15 +42,26 @@ public class Grid : MonoBehaviour {
 
 	#region Public Methods
 	public void GenerateGrid() {
+		//Generating a new grid, clear any remants and initialise values
 		ClearGrid();
 		GetMesh();
 
+		//Generate the grid shape
 		switch(mapShape) {
-		case MapShape.Hexagonal:
+		case MapShape.Hexagon:
+			GenHexShape();
 			break;
 
 		case MapShape.Rectangle:
 			GenRectShape();
+			break;
+
+		case MapShape.Parrallelogram:
+			GenParrallShape();
+			break;
+
+		case MapShape.Triangle:
+			GenTriShape();
 			break;
 
 		default:
@@ -53,11 +71,24 @@ public class Grid : MonoBehaviour {
 
 	public void ClearGrid() {
 		Debug.Log ("Clearing grid...");
-
 		foreach(var tile in grid)
 			DestroyImmediate(tile.Value.gameObject, false);
 	
 		grid.Clear();
+	}
+
+	public Tile TileAt(CubeIndex index){
+		if(grid.ContainsKey(index.ToString()))
+		   return grid[index.ToString()];
+		return null;
+	}
+
+	public Tile TileAt(int x, int y, int z){
+		return TileAt(new CubeIndex(x,y,z));
+	}
+
+	public Tile TileAt(int x, int z){
+		return TileAt(new CubeIndex(x,z));
 	}
 
 	public List<Tile> Neighbours(Tile tile) {
@@ -65,12 +96,58 @@ public class Grid : MonoBehaviour {
 		CubeIndex o;
 
 		for(int i = 0; i < 6; i++) {
-
 			o = tile.index + directions[i];
 			if(grid.ContainsKey(o.ToString()))
 				ret.Add(grid[o.ToString()]);
 		}
 		return ret;
+	}
+
+	public List<Tile> Neighbours(CubeIndex index){
+		return Neighbours(TileAt(index));
+	}
+
+	public List<Tile> Neighbours(int x, int y, int z){
+		return Neighbours(TileAt(x,y,z));
+	}
+
+	public List<Tile> Neighbours(int x, int z){
+		return Neighbours(TileAt(x,z));
+	}
+
+	public List<Tile> TilesInRange(Tile center, int range){
+		//Return tiles rnage steps from center, http://www.redblobgames.com/grids/hexagons/#range
+		List<Tile> ret = new List<Tile>();
+		CubeIndex o;
+
+		for(int dx = -range; dx <= range; dx++){
+			for(int dy = Mathf.Max(-range, -dx-range); dy <= Mathf.Min(range, -dx+range); dy++){
+				o = new CubeIndex(dx, dy, -dx-dy) + center.index;
+				if(grid.ContainsKey(o.ToString()))
+					ret.Add(grid[o.ToString()]);
+			}
+		}
+		return ret;
+	}
+
+	public List<Tile> TilesInRange(CubeIndex index, int range){
+		return TilesInRange(TileAt(index), range);
+	}
+
+	public List<Tile> TilesInRange(int x, int y, int z, int range){
+		return TilesInRange(TileAt(x,y,z), range);
+	}
+
+	public List<Tile> TilesInRange(int x, int z, int range){
+		return TilesInRange(TileAt(x,z), range);
+	}
+
+	public int Distance(CubeIndex a, CubeIndex b){
+		return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) + Mathf.Abs(a.z - b.z);
+	}
+
+	public int Distance(Tile a, Tile b){
+		return Distance(a.index, b.index);
 	}
 	#endregion
 
@@ -89,41 +166,126 @@ public class Grid : MonoBehaviour {
 
 	private void GenHexShape() {
 		Debug.Log ("Generating hexagonal shaped grid...");
-	}
 
-	private void GenRectShape() {
-		Debug.Log ("Generating rectangular shaped grid...");
-//		grid = new Dictionary<int, Tile>();
-
-		CubeIndex index;
 		Tile tile;
+		Vector3 pos = Vector3.zero;
 
-		for (int q = 0; q <= mapWidth; q++){
-			for(int r = 0; r <= mapHeight - q; r++){
-				tile = CreateHexGO(new Vector3(q * HorizontalSpacing(), 0.0f, r * VerticalSpacing() + ((q&1) * 0.5f * VerticalSpacing())), ("Hex " ));
+		int mapSize = Mathf.Max(mapWidth, mapHeight);
+		
+		for (int q = -mapSize; q <= mapSize; q++){
+			int r1 = Mathf.Max(-mapSize, -q-mapSize);
+			int r2 = Mathf.Min(mapSize, -q+mapSize);
+			for(int r = r1; r <= r2; r++){
+				switch(hexOrientation){
+				case HexOrientation.Flat:
+					pos.x = hexRadius * 3.0f/2.0f * q;
+					pos.z = hexRadius * Mathf.Sqrt(3.0f) * (r + q/2.0f);
+					break;
+					
+				case HexOrientation.Pointy:
+					pos.x = hexRadius * Mathf.Sqrt(3.0f) * (q + r/2.0f);
+					pos.z = hexRadius * 3.0f/2.0f * r;
+					break;
+				}
+				
+				tile = CreateHexGO(pos,("Hex[" + q + "," + r + "," + (-q-r).ToString() + "]"));
 				tile.index = new CubeIndex(q,r,-q-r);
 				grid.Add(tile.index.ToString(), tile);
 			}
 		}
+	}
 
-//		for(int i = 0; i < mapWidth; i++){
-//			for(int j = 0; j < mapHeight; j++){
-//				index = new CubeIndex(i,j);
-//				switch(hexOrientation){
-//				case HexOrientation.Flat:
-//					tile = CreateHexGO(new Vector3(i * HorizontalSpacing(), 0.0f, j * VerticalSpacing() + ((i&1) * 0.5f * VerticalSpacing())), ("Hex " + index.ToString()));
-//					tile.index = index;
-//					grid[index.ToString()] = tile;
-//					break;
-//
-//				case HexOrientation.Pointy:
-//					tile = CreateHexGO(new Vector3(i * HorizontalSpacing() + (j&1) * 0.5f * HorizontalSpacing(), 0.0f, j * VerticalSpacing()), ("Hex " + index.ToString()));
-//					tile.index = index;
-//					grid[index.ToString()] = tile;
-//					break;
-//				}
-//			}
-//		}
+	private void GenRectShape() {
+		Debug.Log ("Generating rectangular shaped grid...");
+
+		Tile tile;
+		Vector3 pos = Vector3.zero;
+
+		switch(hexOrientation){
+		case HexOrientation.Flat:
+			for(int q = 0; q < mapWidth; q++){
+				int qOff = q>>1;
+				for (int r = -qOff; r < mapHeight - qOff; r++){
+					pos.x = hexRadius * 3.0f/2.0f * q;
+					pos.z = hexRadius * Mathf.Sqrt(3.0f) * (r + q/2.0f);
+					
+					tile = CreateHexGO(pos,("Hex[" + q + "," + r + "," + (-q-r).ToString() + "]"));
+					tile.index = new CubeIndex(q,r,-q-r);
+					grid.Add(tile.index.ToString(), tile);
+				}
+			}
+			break;
+			
+		case HexOrientation.Pointy:
+			for(int r = 0; r < mapHeight; r++){
+				int rOff = r>>1;
+				for (int q = -rOff; q < mapWidth - rOff; q++){
+					pos.x = hexRadius * Mathf.Sqrt(3.0f) * (q + r/2.0f);
+					pos.z = hexRadius * 3.0f/2.0f * r;
+					
+					tile = CreateHexGO(pos,("Hex[" + q + "," + r + "," + (-q-r).ToString() + "]"));
+					tile.index = new CubeIndex(q,r,-q-r);
+					grid.Add(tile.index.ToString(), tile);
+				}
+			}
+			break;
+		}
+	}
+
+	private void GenParrallShape() {
+		Debug.Log ("Generating parrellelogram shaped grid...");
+
+		Tile tile;
+		Vector3 pos = Vector3.zero;
+		
+		for (int q = 0; q <= mapWidth; q++){
+			for(int r = 0; r <= mapHeight; r++){
+				switch(hexOrientation){
+				case HexOrientation.Flat:
+					pos.x = hexRadius * 3.0f/2.0f * q;
+					pos.z = hexRadius * Mathf.Sqrt(3.0f) * (r + q/2.0f);
+					break;
+					
+				case HexOrientation.Pointy:
+					pos.x = hexRadius * Mathf.Sqrt(3.0f) * (q + r/2.0f);
+					pos.z = hexRadius * 3.0f/2.0f * r;
+					break;
+				}
+
+				tile = CreateHexGO(pos,("Hex[" + q + "," + r + "," + (-q-r).ToString() + "]"));
+				tile.index = new CubeIndex(q,r,-q-r);
+				grid.Add(tile.index.ToString(), tile);
+			}
+		}
+	}
+
+	private void GenTriShape() {
+		Debug.Log ("Generating triangular shaped grid...");
+		
+		Tile tile;
+		Vector3 pos = Vector3.zero;
+
+		int mapSize = Mathf.Max(mapWidth, mapHeight);
+
+		for (int q = 0; q <= mapSize; q++){
+			for(int r = 0; r <= mapSize - q; r++){
+				switch(hexOrientation){
+				case HexOrientation.Flat:
+					pos.x = hexRadius * 3.0f/2.0f * q;
+					pos.z = hexRadius * Mathf.Sqrt(3.0f) * (r + q/2.0f);
+					break;
+					
+				case HexOrientation.Pointy:
+					pos.x = hexRadius * Mathf.Sqrt(3.0f) * (q + r/2.0f);
+					pos.z = hexRadius * 3.0f/2.0f * r;
+					break;
+				}
+				
+				tile = CreateHexGO(pos,("Hex[" + q + "," + r + "," + (-q-r).ToString() + "]"));
+				tile.index = new CubeIndex(q,r,-q-r);
+				grid.Add(tile.index.ToString(), tile);
+			}
+		}
 	}
 
 	private Tile CreateHexGO(Vector3 postion, string name) {
@@ -137,14 +299,6 @@ public class Grid : MonoBehaviour {
 
 		go.transform.position = postion;
 		go.transform.parent = this.transform;
-
-		switch(hexOrientation){
-		case HexOrientation.Flat:
-			break;
-
-		case HexOrientation.Pointy:
-			break;
-		}
 
 		Tile tile = go.GetComponent<Tile>();
 		MeshFilter fil = go.GetComponent<MeshFilter>();
@@ -176,45 +330,19 @@ public class Grid : MonoBehaviour {
 
 		return tile;
 	}
-
-	private float VerticalSpacing() {
-		switch(hexOrientation){
-		case HexOrientation.Flat:
-			return Mathf.Sqrt(3)/2 * (2 * hexRadius);
-
-		case HexOrientation.Pointy:
-			return (2 * hexRadius) * 3 / 4;
-		}
-		return 0;
-	}
-
-	private float HorizontalSpacing() {
-		switch(hexOrientation){
-		case HexOrientation.Flat:
-			return (2 * hexRadius) * 3 / 4;
-			
-		case HexOrientation.Pointy:
-			return Mathf.Sqrt(3)/2 * (2 * hexRadius);
-		}
-		return 0;
-	}
 	#endregion
 }
 
 [System.Serializable]
 public enum MapShape {
 	Rectangle,
-	Hexagonal
+	Hexagon,
+	Parrallelogram,
+	Triangle
 }
 
 [System.Serializable]
 public enum HexOrientation {
 	Pointy,
 	Flat
-}
-
-[System.Serializable]
-public enum OffsetCoords {
-	Odd,
-	Even
 }

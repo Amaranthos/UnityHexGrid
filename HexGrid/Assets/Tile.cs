@@ -4,17 +4,6 @@ using System.Collections.Generic;
 public class Tile : MonoBehaviour {
 	public CubeIndex index;
 
-	public void OnMouseEnter() {
-		foreach(var tile in Grid.inst.Neighbours(this)){
-			tile.GetComponent<LineRenderer>().SetColors(Color.cyan, Color.cyan);
-		}
-	}
-
-	public void OnMouseExit() {				
-		foreach(var tile in Grid.inst.Neighbours(this))
-			tile.GetComponent<LineRenderer>().SetColors(Color.black, Color.black);
-	}
-
 	public static Vector3 Corner(Vector3 origin, float radius, int corner, HexOrientation orientation){
 		float angle = 60 * corner;
 		if(orientation == HexOrientation.Pointy)
@@ -48,7 +37,8 @@ public class Tile : MonoBehaviour {
 		tris.Add(3);
 		tris.Add(5);
 		tris.Add(4);
-		
+
+		//UVs are wrong, I need to find an equation for calucalting them
 		uvs.Add(new Vector2(0.5f, 1f));
 		uvs.Add(new Vector2(1, 0.75f));
 		uvs.Add(new Vector2(1, 0.25f));
@@ -65,6 +55,7 @@ public class Tile : MonoBehaviour {
 		mesh.RecalculateNormals();
 	}
 
+	#region Coordinate Conversion Functions
 	public static OffsetIndex CubeToEvenFlat(CubeIndex c) {
 		OffsetIndex o;
 		o.row = c.x;
@@ -130,6 +121,34 @@ public class Tile : MonoBehaviour {
 		ret.index = one.index + two.index;
 		return ret;
 	}
+
+	public void LineColour(Color colour) {
+		LineRenderer lines = GetComponent<LineRenderer>();
+		if(lines)
+			lines.SetColors(colour, colour);
+	}
+
+	public void LineColour(Color start, Color end){
+		LineRenderer lines = GetComponent<LineRenderer>();
+		if(lines)
+			lines.SetColors(start, end);
+	}
+
+	public void LineWidth(float width){
+		LineRenderer lines = GetComponent<LineRenderer>();
+		if(lines)
+			lines.SetWidth(width, width);
+	}
+
+	public void LineWidth(float start, float end){
+		LineRenderer lines = GetComponent<LineRenderer>();
+		if(lines)
+			lines.SetWidth(start, end);
+	}
+	#endregion
+
+	#region A* Herustic Variables
+	#endregion
 }
 
 [System.Serializable]
