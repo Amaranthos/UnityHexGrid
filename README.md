@@ -54,13 +54,17 @@ private void Start() {
 
 ## Grid Settings
 * `mapShape` determines the overall shape of the map, available options are
-    * Rectangle
+  * Rectangle
+   
   ![Rectangle](http://i.imgur.com/I5eIjlu.jpg)
-    * Hexagon
+  * Hexagon
+   
   ![Hexagon](http://i.imgur.com/pvCvkuT.jpg)
-    * Parrallelogram
+  * Parrallelogram
+   
   ![Parrallelogram](http://i.imgur.com/ZtASYn0.jpg)
-    * Triangle
+  * Triangle
+  
   ![Triangle](http://i.imgur.com/uOEkZKF.jpg)
 * `mapWidth` an `int`, controls the number tiles wide the map is, for hexagonal shape the larger of `mapWidth` and `mapHeight` is picked and used as a radius. 
 * `mapHeight` an `int`, controls the number of tiles high the map is
