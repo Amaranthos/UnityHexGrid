@@ -148,6 +148,11 @@ public class Tile : MonoBehaviour {
 	#endregion
 
 	#region A* Herustic Variables
+	public int MoveCost { get; set; }
+	public int GCost { get; set; }
+	public int HCost { get; set; }
+	public int FCost { get { return GCost + HCost; } }
+	public Tile Parent { get; set; }
 	#endregion
 }
 
