@@ -116,7 +116,7 @@ public class Grid : MonoBehaviour {
 	}
 
 	public List<Tile> TilesInRange(Tile center, int range){
-		//Return tiles rnage steps from center, http://www.redblobgames.com/grids/hexagons/#range
+		//Return tiles range steps from center, http://www.redblobgames.com/grids/hexagons/#range
 		List<Tile> ret = new List<Tile>();
 		CubeIndex o;
 
