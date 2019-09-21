@@ -93,6 +93,10 @@ public class Grid : MonoBehaviour {
 
 	public List<Tile> Neighbours(Tile tile) {
 		List<Tile> ret = new List<Tile>();
+
+        if (tile == null)
+            return ret;
+
 		CubeIndex o;
 
 		for(int i = 0; i < 6; i++) {
