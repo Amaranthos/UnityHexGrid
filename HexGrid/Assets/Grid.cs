@@ -319,14 +319,16 @@ public class Grid : MonoBehaviour {
 
 		if(drawOutlines) {
 			LineRenderer lines = go.GetComponent<LineRenderer>();
-			lines.useLightProbes = false;
+            lines.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
 			lines.receiveShadows = false;
 
-			lines.SetWidth(0.1f, 0.1f);
-			lines.SetColors(Color.black, Color.black);
+            lines.startWidth = 0.1f;
+            lines.endWidth = 0.1f;
+            lines.startColor = Color.black;
+            lines.endColor = Color.black;
 			lines.material = lineMaterial;
 
-			lines.SetVertexCount(7);
+			lines.positionCount = 7;
 
 			for(int vert = 0; vert <= 6; vert++)
 				lines.SetPosition(vert, Tile.Corner(tile.transform.position, hexRadius, vert, hexOrientation));
