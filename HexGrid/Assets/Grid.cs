@@ -93,6 +93,10 @@ public class Grid : MonoBehaviour {
 
 	public List<Tile> Neighbours(Tile tile) {
 		List<Tile> ret = new List<Tile>();
+
+        if (tile == null)
+            return ret;
+
 		CubeIndex o;
 
 		for(int i = 0; i < 6; i++) {
@@ -116,7 +120,7 @@ public class Grid : MonoBehaviour {
 	}
 
 	public List<Tile> TilesInRange(Tile center, int range){
-		//Return tiles rnage steps from center, http://www.redblobgames.com/grids/hexagons/#range
+		//Return tiles range steps from center, http://www.redblobgames.com/grids/hexagons/#range
 		List<Tile> ret = new List<Tile>();
 		CubeIndex o;
 
@@ -315,14 +319,16 @@ public class Grid : MonoBehaviour {
 
 		if(drawOutlines) {
 			LineRenderer lines = go.GetComponent<LineRenderer>();
-			lines.useLightProbes = false;
+            lines.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
 			lines.receiveShadows = false;
 
-			lines.SetWidth(0.1f, 0.1f);
-			lines.SetColors(Color.black, Color.black);
+            lines.startWidth = 0.1f;
+            lines.endWidth = 0.1f;
+            lines.startColor = Color.black;
+            lines.endColor = Color.black;
 			lines.material = lineMaterial;
 
-			lines.SetVertexCount(7);
+			lines.positionCount = 7;
 
 			for(int vert = 0; vert <= 6; vert++)
 				lines.SetPosition(vert, Tile.Corner(tile.transform.position, hexRadius, vert, hexOrientation));

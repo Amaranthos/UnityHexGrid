@@ -125,26 +125,38 @@ public class Tile : MonoBehaviour {
 	public void LineColour(Color colour) {
 		LineRenderer lines = GetComponent<LineRenderer>();
 		if(lines)
-			lines.SetColors(colour, colour);
+        {
+            lines.startColor = colour;
+            lines.endColor = colour;
+        }
 	}
 
 	public void LineColour(Color start, Color end){
 		LineRenderer lines = GetComponent<LineRenderer>();
 		if(lines)
-			lines.SetColors(start, end);
+        {
+            lines.startColor = start;
+            lines.endColor = end;
+        }
 	}
 
 	public void LineWidth(float width){
 		LineRenderer lines = GetComponent<LineRenderer>();
-		if(lines)
-			lines.SetWidth(width, width);
+        if(lines)
+        {
+            lines.startWidth = width;
+            lines.endWidth = width;
+        }
 	}
 
 	public void LineWidth(float start, float end){
 		LineRenderer lines = GetComponent<LineRenderer>();
 		if(lines)
-			lines.SetWidth(start, end);
-	}
+        {
+            lines.startWidth = start;
+            lines.endWidth = end;
+        }
+    }
 	#endregion
 
 	#region A* Herustic Variables
